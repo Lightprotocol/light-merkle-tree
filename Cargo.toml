@@ -1,0 +1,10 @@
+[package]
+name = "light-merkle-tree"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ark-bn254 = "0.3.0"
+ark-ff = "0.3.0"
+light-poseidon = "0.0.2"
+thiserror = "1.0"
