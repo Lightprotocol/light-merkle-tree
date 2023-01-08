@@ -105,6 +105,19 @@ impl MerkleTree {
 
         Ok(())
     }
+
+    pub fn is_known_root(&self, root: [u8; HASH_LEN]) -> bool {
+        for i in (0..(self.current_root_index + 1)).rev() {
+            if self.roots[i] == root {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn last_root(&self) -> [u8; HASH_LEN] {
+        self.roots[self.current_root_index]
+    }
 }
 
 #[cfg(test)]
