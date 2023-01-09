@@ -2,23 +2,14 @@ use light_poseidon::{
     parameters::bn254_x5_3::poseidon_parameters, Poseidon, PoseidonBytesHasher, PoseidonError,
     HASH_LEN,
 };
-use thiserror::Error;
 
-pub(crate) mod constants;
+pub mod constants;
 
 pub const DATA_LEN: usize = 32;
 pub const MAX_HEIGHT: usize = 9;
 pub const MERKLE_TREE_HISTORY_SIZE: usize = 256;
 
 pub trait Hasher {}
-
-#[derive(Error, Debug)]
-pub enum MerkleTreeError {
-    #[error("Poseidon error: {0}")]
-    Poseidon(#[from] PoseidonError),
-    #[error("Could not convert vector to array")]
-    ArrayToVec,
-}
 
 pub struct MerkleTree {
     /// Height of the Merkle tree.
@@ -67,17 +58,15 @@ impl MerkleTree {
         &mut self,
         leaf1: [u8; DATA_LEN],
         leaf2: [u8; DATA_LEN],
-    ) -> Result<[u8; HASH_LEN], MerkleTreeError> {
-        let hash = self.poseidon_hasher.hash_bytes(&[&leaf1, &leaf2])?;
-
-        Ok(hash)
+    ) -> Result<[u8; HASH_LEN], PoseidonError> {
+        self.poseidon_hasher.hash_bytes(&[&leaf1, &leaf2])
     }
 
     pub fn insert(
         &mut self,
         leaf1: [u8; DATA_LEN],
         leaf2: [u8; DATA_LEN],
-    ) -> Result<(), MerkleTreeError> {
+    ) -> Result<(), PoseidonError> {
         // Check if next index doesn't exceed the Merkle tree capacity.
         assert_ne!(self.next_index, 2usize.pow(self.height as u32));
 
@@ -87,7 +76,7 @@ impl MerkleTree {
         for i in 1..self.height {
             println!("current index: {current_index}");
             let (left, right) = if current_index % 2 == 0 {
-                println!("assiging current hash to {}", i);
+                println!("assiging current hash to subtree {}", i);
                 self.filled_subtrees[i] = current_level_hash;
 
                 println!("current_hash = hash(current_hash, zeros[{i}])");
