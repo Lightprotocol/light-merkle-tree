@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 ark-bn254 = "0.3.0"
 ark-ff = "0.3.0"
-light-poseidon = "0.0.2"
+light-poseidon = "0.0.3"
 thiserror = "1.0"

@@ -1,13 +1,16 @@
-use ark_bn254::Fq;
-use ark_ff::{BigInteger, PrimeField};
-use light_poseidon::{parameters::bn254_x5_3::poseidon_parameters, PoseidonError, PoseidonHasher};
+use light_poseidon::{
+    parameters::bn254_x5_3::poseidon_parameters, Poseidon, PoseidonBytesHasher, PoseidonError,
+    HASH_LEN,
+};
 use thiserror::Error;
 
 pub(crate) mod constants;
 
-pub const HASH_LEN: usize = 32;
+pub const DATA_LEN: usize = 32;
 pub const MAX_HEIGHT: usize = 9;
 pub const MERKLE_TREE_HISTORY_SIZE: usize = 256;
+
+pub trait Hasher {}
 
 #[derive(Error, Debug)]
 pub enum MerkleTreeError {
@@ -18,14 +21,20 @@ pub enum MerkleTreeError {
 }
 
 pub struct MerkleTree {
+    /// Height of the Merkle tree.
     pub height: usize,
-    // Can this be a slice or vec? Or does it need to be a fixed size array?
+    /// Subtree hashes.
     pub filled_subtrees: [[u8; HASH_LEN]; MAX_HEIGHT],
+    /// Full history of roots of the Merkle tree (the last one is the current
+    /// one).
     pub roots: [[u8; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE],
+    /// Next index to insert a leaf.
     pub next_index: usize,
+    /// Current index of the root.
     pub current_root_index: usize,
 
-    poseidon_hasher: PoseidonHasher<Fq>,
+    /// Poseidon hasher.
+    poseidon_hasher: Box<dyn PoseidonBytesHasher>,
 }
 
 impl MerkleTree {
@@ -42,7 +51,7 @@ impl MerkleTree {
         let mut roots = [[0; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE];
         roots[0] = constants::ZERO_BYTES_MERKLE_TREE[height];
 
-        let poseidon_hasher = PoseidonHasher::new(poseidon_parameters());
+        let poseidon_hasher = Box::new(Poseidon::new(poseidon_parameters()));
 
         MerkleTree {
             height,
@@ -56,25 +65,18 @@ impl MerkleTree {
 
     fn hash(
         &mut self,
-        leaf1: [u8; HASH_LEN],
-        leaf2: [u8; HASH_LEN],
+        leaf1: [u8; DATA_LEN],
+        leaf2: [u8; DATA_LEN],
     ) -> Result<[u8; HASH_LEN], MerkleTreeError> {
-        let leaf1 = Fq::from_be_bytes_mod_order(&leaf1);
-        let leaf2 = Fq::from_be_bytes_mod_order(&leaf2);
+        let hash = self.poseidon_hasher.hash_bytes(&[&leaf1, &leaf2])?;
 
-        let hash = self.poseidon_hasher.hash(&[leaf1, leaf2])?;
-
-        Ok(hash
-            .into_repr()
-            .to_bytes_be()
-            .try_into()
-            .map_err(|_| MerkleTreeError::ArrayToVec)?)
+        Ok(hash)
     }
 
     pub fn insert(
         &mut self,
-        leaf1: [u8; HASH_LEN],
-        leaf2: [u8; HASH_LEN],
+        leaf1: [u8; DATA_LEN],
+        leaf2: [u8; DATA_LEN],
     ) -> Result<(), MerkleTreeError> {
         // Check if next index doesn't exceed the Merkle tree capacity.
         assert_ne!(self.next_index, 2usize.pow(self.height as u32));
