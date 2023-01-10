@@ -91,6 +91,7 @@ impl MerkleTree {
         }
 
         self.current_root_index = (self.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
+        println!("current root index: {}", self.current_root_index);
         self.roots[self.current_root_index] = current_level_hash;
         self.next_index += 2;
 

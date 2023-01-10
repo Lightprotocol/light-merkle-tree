@@ -1,4 +1,4 @@
-use light_merkle_tree::{constants, DATA_LEN, MAX_HEIGHT, MERKLE_TREE_HISTORY_SIZE};
+use light_merkle_tree::{constants, MerkleTree, DATA_LEN, MAX_HEIGHT, MERKLE_TREE_HISTORY_SIZE};
 use light_poseidon::{
     parameters::bn254_x5_3::poseidon_parameters, Poseidon, PoseidonBytesHasher, PoseidonError,
     HASH_LEN,
@@ -83,7 +83,7 @@ impl FullMerkleTree {
             self.inodes.insert(parent, h);
 
             if parent == 0 {
-                break
+                break;
             }
 
             parent = self.parent(parent);
@@ -99,5 +99,13 @@ impl FullMerkleTree {
 
 #[test]
 fn test_merkle_tree_insert() {
-
+    let mut merkle_tree = MerkleTree::new(9);
+    merkle_tree.insert([3u8; 32], [3u8; 32]).unwrap();
+    assert_eq!(
+        merkle_tree.last_root(),
+        [
+            193, 191, 68, 0, 70, 193, 23, 91, 118, 42, 46, 219, 135, 229, 57, 186, 170, 251, 201,
+            228, 159, 107, 47, 44, 109, 206, 191, 9, 202, 185, 30, 19
+        ]
+    );
 }
