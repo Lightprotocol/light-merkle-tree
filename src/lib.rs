@@ -40,7 +40,7 @@ impl MerkleTree {
         }
 
         let mut roots = [[0; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE];
-        roots[0] = constants::ZERO_BYTES_MERKLE_TREE[height];
+        roots[0] = constants::ZERO_BYTES_MERKLE_TREE[height - 1];
 
         let poseidon_hasher = Box::new(Poseidon::new(poseidon_parameters()));
 
@@ -73,25 +73,32 @@ impl MerkleTree {
         let mut current_index = self.next_index / 2;
         let mut current_level_hash = self.hash(leaf1, leaf2)?;
 
-        for i in 1..self.height {
-            println!("current index: {current_index}");
+        println!(
+            "current level hash (hash of new leaves) {:?}",
+            current_level_hash
+        );
+        println!("starting the loop (0..height-1)");
+
+        for i in 0..self.height - 1 {
+            // println!("current index: {current_index}");
             let (left, right) = if current_index % 2 == 0 {
-                println!("assiging current hash to subtree {}", i);
+                // println!("assiging current hash to subtree {}", i);
                 self.filled_subtrees[i] = current_level_hash;
 
-                println!("current_hash = hash(current_hash, zeros[{i}])");
+                // println!("current_hash = hash(current_hash, zeros[{i}])");
                 (current_level_hash, constants::ZERO_BYTES_MERKLE_TREE[i])
             } else {
-                println!("current_hash = hash(filled_subtrees[{i}], current_hash)");
+                // println!("current_hash = hash(filled_subtrees[{i}], current_hash)");
                 (self.filled_subtrees[i], current_level_hash)
             };
 
             current_index /= 2;
             current_level_hash = self.hash(left, right)?;
+            println!("current level hash {} {:?}", i, current_level_hash);
         }
 
         self.current_root_index = (self.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
-        println!("current root index: {}", self.current_root_index);
+        // println!("current root index: {}", self.current_root_index);
         self.roots[self.current_root_index] = current_level_hash;
         self.next_index += 2;
 

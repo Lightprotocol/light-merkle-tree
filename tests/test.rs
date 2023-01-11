@@ -50,14 +50,17 @@ impl FullMerkleTree {
     }
 
     fn parent(&self, i: usize) -> usize {
+        println!("checking parent of {i}");
         (i - 1) / 2
     }
 
     fn left(&self, i: usize) -> usize {
+        println!("checking left of {i}");
         2 * i + 1
     }
 
     fn right(&self, i: usize) -> usize {
+        println!("checking right of {i}");
         2 * i + 2
     }
 
@@ -73,7 +76,15 @@ impl FullMerkleTree {
 
         self.inodes.push(h);
 
+        // If this is the first inode, there are no parents to recalculate
+        // the hash for.
+        if self.inodes.len() == 1 {
+            return Ok(());
+        }
+
+        println!("first parent");
         let mut parent = self.parent(self.inodes.len() - 1);
+        println!("loop");
         loop {
             let left = self.left(parent);
             let right = self.right(parent);
@@ -100,9 +111,24 @@ impl FullMerkleTree {
 #[test]
 fn test_merkle_tree_insert() {
     let mut merkle_tree = MerkleTree::new(9);
+    println!("root: {:?}", merkle_tree.last_root());
     merkle_tree.insert([3u8; 32], [3u8; 32]).unwrap();
+    println!("new root {:?}", merkle_tree.last_root());
     assert_eq!(
         merkle_tree.last_root(),
+        [
+            193, 191, 68, 0, 70, 193, 23, 91, 118, 42, 46, 219, 135, 229, 57, 186, 170, 251, 201,
+            228, 159, 107, 47, 44, 109, 206, 191, 9, 202, 185, 30, 19
+        ]
+    );
+}
+
+#[test]
+fn test_full_merkle_tree_insert() {
+    let mut merkle_tree = FullMerkleTree::new(9);
+    merkle_tree.insert([3u8; 32], [3u8; 32]).unwrap();
+    assert_eq!(
+        merkle_tree.root(),
         [
             193, 191, 68, 0, 70, 193, 23, 91, 118, 42, 46, 219, 135, 229, 57, 186, 170, 251, 201,
             228, 159, 107, 47, 44, 109, 206, 191, 9, 202, 185, 30, 19
