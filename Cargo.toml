@@ -1,12 +1,4 @@
-[package]
-name = "light-merkle-tree"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-ark-bn254 = "0.3.0"
-ark-ff = "0.3.0"
-digest = "0.10"
-light-poseidon = "0.0.3"
-sha2 = "0.10"
-thiserror = "1.0"
+[workspace]
+members = [
+    "light-merkle-tree"
+]
