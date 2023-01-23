@@ -62,8 +62,13 @@ pub fn generate_zero_bytes(opts: Options) -> Result<(), anyhow::Error> {
     let mut zero_bytes = [[0u8; 32]; 19];
     let mut zero_bytes_tokens = vec![];
 
-    let mut prev_hash = [0u8; 32];
+    hasher.update([1u8; 32]);
+    hasher.update([1u8; 32]);
+
+    let mut prev_hash = <[u8; HASH_LEN]>::try_from(hasher.finalize_reset().to_vec()).unwrap();
+
     for i in 0..19 {
+        hasher.update(prev_hash);
         hasher.update(prev_hash);
 
         let cur_hash = <[u8; HASH_LEN]>::try_from(hasher.finalize_reset().to_vec()).unwrap();
