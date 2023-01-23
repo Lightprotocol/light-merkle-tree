@@ -4,17 +4,12 @@ use sha2::{Digest, Sha256};
 #[test]
 fn test_sha256() {
     let hasher = Sha256::new();
-    let zero_bytes = constants::poseidon::ZERO_BYTES;
+    let zero_bytes = constants::sha256::ZERO_BYTES;
     let mut merkle_tree = MerkleTree::new(3, hasher, zero_bytes);
 
-    let h1 = merkle_tree.hash([0; 32], [0; 32]).unwrap();
-    assert_eq!(
-        h1,
-        [
-            245, 165, 253, 66, 209, 106, 32, 48, 39, 152, 239, 110, 211, 9, 151, 155, 67, 0, 61,
-            35, 32, 217, 240, 232, 234, 152, 49, 169, 39, 89, 251, 75
-        ]
-    );
+    let h = merkle_tree.hash([1; 32], [1; 32]).unwrap();
+    let h = merkle_tree.hash(h, h).unwrap();
+    assert_eq!(h, constants::sha256::ZERO_BYTES[0]);
 }
 
 // #[test]
