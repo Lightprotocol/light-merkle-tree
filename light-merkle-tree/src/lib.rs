@@ -34,6 +34,9 @@ where
     /// sha256 hasher.
     hasher: D,
     /// Initial bytes of the Merkle tree (with all leaves having zero value).
+    // TODO: We don't want it as a field.
+    // We want this struct to be used directly as a Solana account.
+    // The main problem: we don't want to save zero bytes in a Solana account.
     zero_bytes: ZeroBytes,
 }
 
