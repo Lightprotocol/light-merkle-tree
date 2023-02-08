@@ -1,5 +1,5 @@
 use constants::ZeroBytes;
-use digest::{Digest, FixedOutputReset};
+use hasher::{Hash, Hasher};
 use thiserror::Error;
 
 pub mod constants;
@@ -15,9 +15,9 @@ pub enum MerkleTreeError {
     SliceToArray,
 }
 
-pub struct MerkleTree<D>
+pub struct MerkleTree<H>
 where
-    D: Digest + FixedOutputReset,
+    H: Hasher,
 {
     /// Height of the Merkle tree.
     pub height: usize,
@@ -32,7 +32,7 @@ where
     pub current_root_index: usize,
 
     /// sha256 hasher.
-    hasher: D,
+    hasher: H,
     /// Initial bytes of the Merkle tree (with all leaves having zero value).
     // TODO: We don't want it as a field.
     // We want this struct to be used directly as a Solana account.
@@ -40,11 +40,11 @@ where
     zero_bytes: ZeroBytes,
 }
 
-impl<D> MerkleTree<D>
+impl<H> MerkleTree<H>
 where
-    D: Digest + FixedOutputReset,
+    H: Hasher,
 {
-    pub fn new(height: usize, hasher: D, zero_bytes: ZeroBytes) -> Self {
+    pub fn new(height: usize, hasher: H, zero_bytes: ZeroBytes) -> Self {
         assert!(height > 0);
         assert!(height <= MAX_HEIGHT);
 
@@ -68,33 +68,20 @@ where
         }
     }
 
-    pub fn hash(
-        &mut self,
-        leaf1: [u8; DATA_LEN],
-        leaf2: [u8; DATA_LEN],
-    ) -> Result<[u8; HASH_LEN], MerkleTreeError> {
+    pub fn hash(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) -> Hash {
         // TODO(vadorovsky): The `digest` crate defines the `update` method both
         // in `Digest` and `Update` trait separately, therefore we need to
         // specify the trait explicitly here. That could be fixed by just
         // removing the `update` method from the `Digest` trait.
-        Digest::update(&mut self.hasher, &leaf1);
-        Digest::update(&mut self.hasher, &leaf2);
-        Ok(
-            <[u8; HASH_LEN]>::try_from(self.hasher.finalize_reset().to_vec())
-                .map_err(|_| MerkleTreeError::SliceToArray)?,
-        )
+        self.hasher.hashv(&[&leaf1, &leaf2])
     }
 
-    pub fn insert(
-        &mut self,
-        leaf1: [u8; DATA_LEN],
-        leaf2: [u8; DATA_LEN],
-    ) -> Result<(), MerkleTreeError> {
+    pub fn insert(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) {
         // Check if next index doesn't exceed the Merkle tree capacity.
         assert_ne!(self.next_index, 2usize.pow(self.height as u32));
 
         let mut current_index = self.next_index / 2;
-        let mut current_level_hash = self.hash(leaf1, leaf2)?;
+        let mut current_level_hash = self.hash(leaf1, leaf2);
 
         println!(
             "current level hash (hash of new leaves) {:?}",
@@ -116,7 +103,7 @@ where
             };
 
             current_index /= 2;
-            current_level_hash = self.hash(left, right)?;
+            current_level_hash = self.hash(left, right);
             println!("current level hash {} {:?}", i, current_level_hash);
         }
 
@@ -124,8 +111,6 @@ where
         // println!("current root index: {}", self.current_root_index);
         self.roots[self.current_root_index] = current_level_hash;
         self.next_index += 2;
-
-        Ok(())
     }
 
     pub fn is_known_root(&self, root: [u8; HASH_LEN]) -> bool {

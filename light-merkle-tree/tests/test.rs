@@ -1,5 +1,5 @@
+use hasher::solana::Sha256;
 use light_merkle_tree::{constants, MerkleTree};
-use sha2::{Digest, Sha256};
 
 #[test]
 fn test_sha256() {
@@ -7,8 +7,8 @@ fn test_sha256() {
     let zero_bytes = constants::sha256::ZERO_BYTES;
     let mut merkle_tree = MerkleTree::new(3, hasher, zero_bytes);
 
-    let h = merkle_tree.hash([1; 32], [1; 32]).unwrap();
-    let h = merkle_tree.hash(h, h).unwrap();
+    let h = merkle_tree.hash([1; 32], [1; 32]);
+    let h = merkle_tree.hash(h, h);
     assert_eq!(h, constants::sha256::ZERO_BYTES[0]);
 }
 
@@ -18,17 +18,17 @@ fn test_merkle_tree_insert() {
     let zero_bytes = constants::sha256::ZERO_BYTES;
     let mut merkle_tree = MerkleTree::new(3, hasher, zero_bytes);
 
-    let h1 = merkle_tree.hash([1; 32], [2; 32]).unwrap();
+    let h1 = merkle_tree.hash([1; 32], [2; 32]);
     println!("h1: {:?}", h1);
 
-    let h2 = merkle_tree.hash(h1, zero_bytes[1]).unwrap();
+    let h2 = merkle_tree.hash(h1, zero_bytes[1]);
     println!("h2: {:?}", h2);
 
-    let h3 = merkle_tree.hash(h2, zero_bytes[2]).unwrap();
+    let h3 = merkle_tree.hash(h2, zero_bytes[2]);
     println!("h3: {:?}", h3);
 
     println!("root: {:?}", merkle_tree.last_root());
-    merkle_tree.insert([1u8; 32], [2u8; 32]).unwrap();
+    merkle_tree.insert([1u8; 32], [2u8; 32]);
     println!("new root {:?}", merkle_tree.last_root());
     assert_eq!(merkle_tree.last_root(), h3);
 
@@ -40,7 +40,7 @@ fn test_merkle_tree_insert() {
         ]
     );
 
-    merkle_tree.insert([3u8; 32], [4u8; 32]).unwrap();
+    merkle_tree.insert([3u8; 32], [4u8; 32]);
 
     assert_eq!(
         merkle_tree.last_root(),

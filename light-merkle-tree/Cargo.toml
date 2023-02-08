@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-digest = "0.10"
+hasher = { path = "../../hasher" }
 thiserror = "1.0"
 
 [dev-dependencies]
