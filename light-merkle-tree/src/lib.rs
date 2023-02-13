@@ -15,12 +15,12 @@ pub enum MerkleTreeError {
     SliceToArray,
 }
 
-pub struct MerkleTree<H>
-where
-    H: Hasher,
-{
+#[derive(PartialEq, Eq, Debug)]
+pub struct MerkleTreeData {
     /// Height of the Merkle tree.
     pub height: usize,
+    // TODO(vadorovsky): Check if Solana is OK with having a const generic
+    // instead of MAX_HEIGHT.
     /// Subtree hashes.
     pub filled_subtrees: [[u8; HASH_LEN]; MAX_HEIGHT],
     /// Full history of roots of the Merkle tree (the last one is the current
@@ -30,7 +30,14 @@ where
     pub next_index: usize,
     /// Current index of the root.
     pub current_root_index: usize,
+}
 
+pub struct MerkleTree<H>
+where
+    H: Hasher,
+{
+    /// State of the Merkle tree stored as byte arrays.
+    pub data: MerkleTreeData,
     /// sha256 hasher.
     hasher: H,
     /// Initial bytes of the Merkle tree (with all leaves having zero value).
@@ -58,11 +65,21 @@ where
         roots[0] = zero_bytes[height - 1];
 
         MerkleTree {
-            height,
-            filled_subtrees,
-            roots,
-            next_index: 0,
-            current_root_index: 0,
+            data: MerkleTreeData {
+                height,
+                filled_subtrees,
+                roots,
+                next_index: 0,
+                current_root_index: 0,
+            },
+            hasher,
+            zero_bytes,
+        }
+    }
+
+    pub fn from_data(data: MerkleTreeData, hasher: H, zero_bytes: ZeroBytes) -> Self {
+        MerkleTree {
+            data,
             hasher,
             zero_bytes,
         }
@@ -78,9 +95,9 @@ where
 
     pub fn insert(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) {
         // Check if next index doesn't exceed the Merkle tree capacity.
-        assert_ne!(self.next_index, 2usize.pow(self.height as u32));
+        assert_ne!(self.data.next_index, 2usize.pow(self.data.height as u32));
 
-        let mut current_index = self.next_index / 2;
+        let mut current_index = self.data.next_index / 2;
         let mut current_level_hash = self.hash(leaf1, leaf2);
 
         println!(
@@ -89,17 +106,17 @@ where
         );
         println!("starting the loop (1..height)");
 
-        for i in 1..self.height {
+        for i in 1..self.data.height {
             // println!("current index: {current_index}");
             let (left, right) = if current_index % 2 == 0 {
                 println!("assiging current hash to subtree {}", i);
-                self.filled_subtrees[i] = current_level_hash;
+                self.data.filled_subtrees[i] = current_level_hash;
 
                 // println!("current_hash = hash(current_hash, zeros[{i}])");
                 (current_level_hash, self.zero_bytes[i])
             } else {
                 // println!("current_hash = hash(filled_subtrees[{i}], current_hash)");
-                (self.filled_subtrees[i], current_level_hash)
+                (self.data.filled_subtrees[i], current_level_hash)
             };
 
             current_index /= 2;
@@ -107,15 +124,16 @@ where
             println!("current level hash {} {:?}", i, current_level_hash);
         }
 
-        self.current_root_index = (self.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
+        self.data.current_root_index =
+            (self.data.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
         // println!("current root index: {}", self.current_root_index);
-        self.roots[self.current_root_index] = current_level_hash;
-        self.next_index += 2;
+        self.data.roots[self.data.current_root_index] = current_level_hash;
+        self.data.next_index += 2;
     }
 
     pub fn is_known_root(&self, root: [u8; HASH_LEN]) -> bool {
-        for i in (0..(self.current_root_index + 1)).rev() {
-            if self.roots[i] == root {
+        for i in (0..(self.data.current_root_index + 1)).rev() {
+            if self.data.roots[i] == root {
                 return true;
             }
         }
@@ -123,6 +141,6 @@ where
     }
 
     pub fn last_root(&self) -> [u8; HASH_LEN] {
-        self.roots[self.current_root_index]
+        self.data.roots[self.data.current_root_index]
     }
 }
