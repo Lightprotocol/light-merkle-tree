@@ -100,33 +100,20 @@ where
         let mut current_index = self.data.next_index / 2;
         let mut current_level_hash = self.hash(leaf1, leaf2);
 
-        println!(
-            "current level hash (hash of new leaves) {:?}",
-            current_level_hash
-        );
-        println!("starting the loop (1..height)");
-
         for i in 1..self.data.height {
-            // println!("current index: {current_index}");
             let (left, right) = if current_index % 2 == 0 {
-                println!("assiging current hash to subtree {}", i);
                 self.data.filled_subtrees[i] = current_level_hash;
-
-                // println!("current_hash = hash(current_hash, zeros[{i}])");
                 (current_level_hash, self.zero_bytes[i])
             } else {
-                // println!("current_hash = hash(filled_subtrees[{i}], current_hash)");
                 (self.data.filled_subtrees[i], current_level_hash)
             };
 
             current_index /= 2;
             current_level_hash = self.hash(left, right);
-            println!("current level hash {} {:?}", i, current_level_hash);
         }
 
         self.data.current_root_index =
             (self.data.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
-        // println!("current root index: {}", self.current_root_index);
         self.data.roots[self.data.current_root_index] = current_level_hash;
         self.data.next_index += 2;
     }
