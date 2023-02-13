@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 hasher = { path = "../../hasher" }
-thiserror = "1.0"
 
 [dev-dependencies]
 sha2 = "0.10"

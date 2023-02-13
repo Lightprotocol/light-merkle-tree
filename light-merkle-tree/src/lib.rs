@@ -1,6 +1,5 @@
 use constants::ZeroBytes;
 use hasher::{Hash, Hasher};
-use thiserror::Error;
 
 pub mod constants;
 
@@ -8,12 +7,6 @@ pub const DATA_LEN: usize = 32;
 pub const HASH_LEN: usize = 32;
 pub const MAX_HEIGHT: usize = 18;
 pub const MERKLE_TREE_HISTORY_SIZE: usize = 256;
-
-#[derive(Error, Debug)]
-pub enum MerkleTreeError {
-    #[error("Could not convert slice to array")]
-    SliceToArray,
-}
 
 #[derive(PartialEq, Eq, Debug)]
 pub struct MerkleTreeData {
