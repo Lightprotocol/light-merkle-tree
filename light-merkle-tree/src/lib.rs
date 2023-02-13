@@ -41,9 +41,6 @@ where
     /// sha256 hasher.
     hasher: H,
     /// Initial bytes of the Merkle tree (with all leaves having zero value).
-    // TODO: We don't want it as a field.
-    // We want this struct to be used directly as a Solana account.
-    // The main problem: we don't want to save zero bytes in a Solana account.
     zero_bytes: ZeroBytes,
 }
 
@@ -86,10 +83,6 @@ where
     }
 
     pub fn hash(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) -> Hash {
-        // TODO(vadorovsky): The `digest` crate defines the `update` method both
-        // in `Digest` and `Update` trait separately, therefore we need to
-        // specify the trait explicitly here. That could be fixed by just
-        // removing the `update` method from the `Digest` trait.
         self.hasher.hashv(&[&leaf1, &leaf2])
     }
 
