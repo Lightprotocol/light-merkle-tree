@@ -4,7 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anchor-lang = { version = "0.25", optional = true }
 hasher = { path = "../../hasher" }
 
 [dev-dependencies]
 sha2 = "0.10"
+
+[features]
+solana = ["anchor-lang"]
