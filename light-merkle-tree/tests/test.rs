@@ -1,11 +1,33 @@
-use hasher::solana::Sha256;
-use light_merkle_tree::{constants, MerkleTree};
+#[cfg(feature = "solana")]
+use light_merkle_tree::HashFunction;
+use light_merkle_tree::{
+    config,
+    constants::{self},
+    hasher::solana::Sha256,
+    MerkleTree,
+};
+
+#[cfg(feature = "solana")]
+mod test_config {
+    use anchor_lang::prelude::*;
+
+    use super::*;
+
+    pub(crate) struct Sha256MerkleTreeConfig;
+
+    impl config::MerkleTreeConfig for Sha256MerkleTreeConfig {
+        const ZERO_BYTES: constants::ZeroBytes = constants::sha256::ZERO_BYTES;
+        const PROGRAM_ID: Pubkey = Pubkey::new_from_array([0u8; 32]);
+    }
+}
 
 #[test]
 fn test_sha256() {
-    let hasher = Sha256::new();
-    let zero_bytes = constants::sha256::ZERO_BYTES;
-    let mut merkle_tree = MerkleTree::new(3, hasher, zero_bytes);
+    #[cfg(feature = "solana")]
+    let mut merkle_tree =
+        MerkleTree::<Sha256, test_config::Sha256MerkleTreeConfig>::new(3, HashFunction::Sha256);
+    #[cfg(not(feature = "solana"))]
+    let mut merkle_tree = MerkleTree::<Sha256, config::Sha256MerkleTreeConfig>::new(3);
 
     let h = merkle_tree.hash([1; 32], [1; 32]);
     let h = merkle_tree.hash(h, h);
@@ -14,13 +36,15 @@ fn test_sha256() {
 
 #[test]
 fn test_merkle_tree_insert() {
-    let hasher = Sha256::new();
-    let zero_bytes = constants::sha256::ZERO_BYTES;
-    let mut merkle_tree = MerkleTree::new(3, hasher, zero_bytes);
+    #[cfg(feature = "solana")]
+    let mut merkle_tree =
+        MerkleTree::<Sha256, test_config::Sha256MerkleTreeConfig>::new(3, HashFunction::Sha256);
+    #[cfg(not(feature = "solana"))]
+    let mut merkle_tree = MerkleTree::<Sha256, config::Sha256MerkleTreeConfig>::new(3);
 
     let h1 = merkle_tree.hash([1; 32], [2; 32]);
-    let h2 = merkle_tree.hash(h1, zero_bytes[1]);
-    let h3 = merkle_tree.hash(h2, zero_bytes[2]);
+    let h2 = merkle_tree.hash(h1, constants::sha256::ZERO_BYTES[1]);
+    let h3 = merkle_tree.hash(h2, constants::sha256::ZERO_BYTES[2]);
 
     merkle_tree.insert([1u8; 32], [2u8; 32]);
     assert_eq!(merkle_tree.last_root(), h3);
