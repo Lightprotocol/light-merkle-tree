@@ -2,12 +2,13 @@ use std::marker::PhantomData;
 
 #[cfg(feature = "solana")]
 use anchor_lang::prelude::*;
-use hasher::{Hash, Hasher};
 
 use config::MerkleTreeConfig;
+use hasher::{Hash, Hasher};
 
 pub mod config;
 pub mod constants;
+pub mod hasher;
 
 pub const DATA_LEN: usize = 32;
 pub const HASH_LEN: usize = 32;
