@@ -1,9 +1,9 @@
-use hasher::solana::Sha256;
 #[cfg(feature = "solana")]
 use light_merkle_tree::HashFunction;
 use light_merkle_tree::{
     config,
     constants::{self},
+    hasher::Sha256,
     MerkleTree,
 };
 
