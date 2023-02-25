@@ -56,18 +56,35 @@ where
     H: Hasher,
     C: MerkleTreeConfig,
 {
-    pub fn new(height: usize, #[cfg(feature = "solana")] hash_function: HashFunction) -> Self {
+    fn check_height(height: usize) {
         assert!(height > 0);
         assert!(height <= MAX_HEIGHT);
+    }
 
+    fn new_filled_subtrees(height: usize) -> [[u8; HASH_LEN]; MAX_HEIGHT] {
         let mut filled_subtrees = [[0; HASH_LEN]; MAX_HEIGHT];
 
         for i in 0..height {
             filled_subtrees[i] = C::ZERO_BYTES[i];
         }
 
+        filled_subtrees
+    }
+
+    fn new_roots(height: usize) -> [[u8; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE] {
         let mut roots = [[0; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE];
         roots[0] = C::ZERO_BYTES[height - 1];
+
+        roots
+    }
+
+    /// Create a new Merkle tree with the given height.
+    #[cfg(not(feature = "solana"))]
+    pub fn new(height: usize, #[cfg(feature = "solana")] hash_function: HashFunction) -> Self {
+        Self::check_height(height);
+
+        let filled_subtrees = Self::new_filled_subtrees(height);
+        let roots = Self::new_roots(height);
 
         MerkleTree {
             height,
@@ -80,6 +97,18 @@ where
             hasher: PhantomData,
             config: PhantomData,
         }
+    }
+
+    /// Initialize the Merkle tree with subtrees and roots based on the given
+    /// height.
+    #[cfg(feature = "solana")]
+    pub fn init(&mut self, height: usize, hash_function: HashFunction) {
+        Self::check_height(height);
+
+        self.height = height;
+        self.filled_subtrees = Self::new_filled_subtrees(height);
+        self.roots = Self::new_roots(height);
+        self.hash_function = hash_function;
     }
 
     pub fn hash(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) -> Hash {
