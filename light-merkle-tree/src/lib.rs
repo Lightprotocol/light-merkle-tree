@@ -13,7 +13,7 @@ pub mod hasher;
 pub const DATA_LEN: usize = 32;
 pub const HASH_LEN: usize = 32;
 pub const MAX_HEIGHT: usize = 18;
-pub const MERKLE_TREE_HISTORY_SIZE: usize = 256;
+pub const MERKLE_TREE_HISTORY_SIZE: usize = 20;
 
 #[cfg(feature = "solana")]
 #[derive(AnchorSerialize, AnchorDeserialize, PartialEq, Eq, Debug, Clone, Copy)]
@@ -22,6 +22,8 @@ pub enum HashFunction {
     Poseidon,
 }
 
+// TODO(vadorovsky): Teach Anchor to accept `usize`, constants and const
+// generics when generating IDL.
 #[cfg_attr(feature = "solana", derive(AnchorSerialize, AnchorDeserialize))]
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
 pub struct MerkleTree<H, C>
@@ -30,18 +32,16 @@ where
     C: MerkleTreeConfig,
 {
     /// Height of the Merkle tree.
-    pub height: usize,
-    // TODO(vadorovsky): Check if Solana is OK with having a const generic
-    // instead of MAX_HEIGHT.
+    pub height: u64,
     /// Subtree hashes.
-    pub filled_subtrees: [[u8; HASH_LEN]; MAX_HEIGHT],
+    pub filled_subtrees: [[u8; 32]; 18],
     /// Full history of roots of the Merkle tree (the last one is the current
     /// one).
-    pub roots: [[u8; HASH_LEN]; MERKLE_TREE_HISTORY_SIZE],
+    pub roots: [[u8; 32]; 20],
     /// Next index to insert a leaf.
-    pub next_index: usize,
+    pub next_index: u64,
     /// Current index of the root.
-    pub current_root_index: usize,
+    pub current_root_index: u64,
 
     /// Hash implementation used on the Merkle tree.
     #[cfg(feature = "solana")]
@@ -87,7 +87,7 @@ where
         let roots = Self::new_roots(height);
 
         MerkleTree {
-            height,
+            height: height as u64,
             filled_subtrees,
             roots,
             next_index: 0,
@@ -105,7 +105,7 @@ where
     pub fn init(&mut self, height: usize, hash_function: HashFunction) {
         Self::check_height(height);
 
-        self.height = height;
+        self.height = height as u64;
         self.filled_subtrees = Self::new_filled_subtrees(height);
         self.roots = Self::new_roots(height);
         self.hash_function = hash_function;
@@ -117,12 +117,12 @@ where
 
     pub fn insert(&mut self, leaf1: [u8; DATA_LEN], leaf2: [u8; DATA_LEN]) {
         // Check if next index doesn't exceed the Merkle tree capacity.
-        assert_ne!(self.next_index, 2usize.pow(self.height as u32));
+        assert_ne!(self.next_index, 2u64.pow(self.height as u32));
 
         let mut current_index = self.next_index / 2;
         let mut current_level_hash = self.hash(leaf1, leaf2);
 
-        for i in 1..self.height {
+        for i in 1..self.height as usize {
             let (left, right) = if current_index % 2 == 0 {
                 self.filled_subtrees[i] = current_level_hash;
                 (current_level_hash, C::ZERO_BYTES[i])
@@ -134,13 +134,13 @@ where
             current_level_hash = self.hash(left, right);
         }
 
-        self.current_root_index = (self.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE;
-        self.roots[self.current_root_index] = current_level_hash;
+        self.current_root_index = (self.current_root_index + 1) % MERKLE_TREE_HISTORY_SIZE as u64;
+        self.roots[self.current_root_index as usize] = current_level_hash;
         self.next_index += 2;
     }
 
     pub fn is_known_root(&self, root: [u8; HASH_LEN]) -> bool {
-        for i in (0..(self.current_root_index + 1)).rev() {
+        for i in (0..(self.current_root_index as usize + 1)).rev() {
             if self.roots[i] == root {
                 return true;
             }
@@ -149,7 +149,7 @@ where
     }
 
     pub fn last_root(&self) -> [u8; HASH_LEN] {
-        self.roots[self.current_root_index]
+        self.roots[self.current_root_index as usize]
     }
 }
 
