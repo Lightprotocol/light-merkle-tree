@@ -2,6 +2,8 @@
 name = "light-merkle-tree"
 version = "0.1.0"
 edition = "2021"
+description = "Sparse Merkle tree implementation"
+license = "Apache-2.0"
 
 [dependencies]
 anchor-lang = "0.26"
