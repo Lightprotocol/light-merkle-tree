@@ -2,6 +2,7 @@ use std::marker::PhantomData;
 
 #[cfg(feature = "solana")]
 use anchor_lang::prelude::*;
+use bytemuck::{Pod, Zeroable};
 
 use config::MerkleTreeConfig;
 use hasher::{Hash, Hasher};
@@ -22,10 +23,25 @@ pub enum HashFunction {
     Poseidon,
 }
 
+unsafe impl<H, C> Zeroable for MerkleTree<H, C>
+where
+    H: Hasher + Zeroable,
+    C: MerkleTreeConfig + Zeroable,
+{
+}
+
+unsafe impl<H, C> Pod for MerkleTree<H, C>
+where
+    H: Hasher + Pod,
+    C: MerkleTreeConfig + Pod,
+{
+}
+
 // TODO(vadorovsky): Teach Anchor to accept `usize`, constants and const
 // generics when generating IDL.
 #[cfg_attr(feature = "solana", derive(AnchorSerialize, AnchorDeserialize))]
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[repr(C)]
 pub struct MerkleTree<H, C>
 where
     H: Hasher,

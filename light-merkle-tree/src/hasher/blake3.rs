@@ -1,8 +1,10 @@
 use anchor_lang::solana_program::blake3::{hash, hashv};
+use bytemuck::{Pod, Zeroable};
 
 use crate::{Hash, Hasher};
 
 #[derive(Clone, Copy)] // To allow using with zero copy Solana accounts.
+#[repr(C)]
 pub struct Blake3;
 
 impl Hasher for Blake3 {
@@ -14,3 +16,6 @@ impl Hasher for Blake3 {
         hashv(vals).to_bytes()
     }
 }
+
+unsafe impl Zeroable for Blake3 {}
+unsafe impl Pod for Blake3 {}
