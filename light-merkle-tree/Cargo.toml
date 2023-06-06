@@ -6,7 +6,8 @@ description = "Sparse Merkle tree implementation"
 license = "Apache-2.0"
 
 [dependencies]
-anchor-lang = "0.26"
+anchor-lang = { git = "https://github.com/coral-xyz/anchor", rev = "1c6f86e5f7793ce6adefe9cbfa11939647c509ce" }
+bytemuck = "1.13.1"
 
 [dev-dependencies]
 sha2 = "0.10"
