@@ -3,6 +3,7 @@ use std::marker::PhantomData;
 #[cfg(feature = "solana")]
 use anchor_lang::prelude::*;
 
+use bytemuck::{Pod, Zeroable};
 use config::MerkleTreeConfig;
 use hasher::{Hash, Hasher};
 
@@ -26,6 +27,7 @@ pub enum HashFunction {
 // generics when generating IDL.
 #[cfg_attr(feature = "solana", derive(AnchorSerialize, AnchorDeserialize))]
 #[derive(PartialEq, Eq, Debug, Clone, Copy)]
+#[repr(C)]
 pub struct MerkleTree<H, C>
 where
     H: Hasher,
@@ -151,6 +153,41 @@ where
     pub fn last_root(&self) -> [u8; HASH_LEN] {
         self.roots[self.current_root_index as usize]
     }
+}
+
+/// The [`Pod`](bytemuck::Pod) trait is used under the hood by the
+/// [`zero_copy`](anchor_lang::zero_copy) attribute macro and is required for
+/// usage in zero-copy Solana accounts.
+///
+/// SAFETY: Generic parameters are used only as `PhantomData` and they don't
+/// affect the layout of the struct nor its size or padding. The only reason
+/// why we can't `#[derive(Pod)]` is because bytemuck is not aware of that and
+/// it doesn't allow to derive `Pod` for structs with generic parameters.
+/// Would be nice to fix that upstream:
+/// https://github.com/Lokathor/bytemuck/issues/191
+unsafe impl<H, C> Pod for MerkleTree<H, C>
+where
+    H: Hasher + Copy + 'static,
+    C: MerkleTreeConfig + Copy + 'static,
+{
+}
+
+/// The [`Zeroable`](bytemuck::Zeroable) trait is used under the hood by the
+/// [`zero_copy`](anchor_lang::zero_copy) attribute macro and is required for
+/// usage in zero-copy Solana accounts.
+///
+/// SAFETY: Generic parameters are used only as `PhantomData` and they don't
+/// affect the layout of the struct nor its size or padding. The only reason
+/// why we can't `#[derive(Zeroable)]` is because bytemuck is not aware of that
+/// and it doesn't allow to derive `Zeroable` for structs with generic
+/// parameters.
+/// Would be nice to fix that upstream:
+/// https://github.com/Lokathor/bytemuck/issues/191
+unsafe impl<H, C> Zeroable for MerkleTree<H, C>
+where
+    H: Hasher,
+    C: MerkleTreeConfig,
+{
 }
 
 #[cfg(feature = "solana")]
